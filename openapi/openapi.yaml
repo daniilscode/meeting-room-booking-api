@@ -2,7 +2,9 @@
 info:
   title: MeetReserve API
   version: 1.0.0
-  description: API для создания временной брони переговорной комнаты.
+  description: >-
+    API для создания, подтверждения и отмены брони переговорной комнаты.
+    Все временные метки в ответах возвращаются в UTC в формате ISO 8601.
 servers:
   - url: http://localhost:8080
     description: Локальный сервер
@@ -50,7 +52,125 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/v1/bookings/{id}/confirm:
+    post:
+      tags: [Bookings]
+      operationId: confirmBooking
+      summary: Подтвердить временную бронь
+      description: >-
+        Подтверждает PENDING только до expiresAt и устанавливает expiresAt в null.
+        Повторное подтверждение CONFIRMED возвращает текущую бронь с 200 OK.
+        Подтверждение CANCELLED возвращает 409 BOOKING_NOT_PENDING.
+        При now >= expiresAt бронь PENDING переводится в EXPIRED;
+        изменение фиксируется до возврата 410 BOOKING_EXPIRED.
+        Для уже истёкшей брони также возвращается 410 BOOKING_EXPIRED.
+        Тело запроса отсутствует.
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      responses:
+        '200':
+          description: Бронь подтверждена или уже была подтверждена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+              example:
+                id: a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+                roomId: 1
+                userId: 42
+                title: Архитектурный комитет
+                startTime: '2026-11-01T14:00:00Z'
+                endTime: '2026-11-01T15:00:00Z'
+                status: CONFIRMED
+                expiresAt: null
+                createdAt: '2026-11-01T13:00:00Z'
+        '400':
+          $ref: '#/components/responses/InvalidBookingId'
+        '404':
+          $ref: '#/components/responses/BookingNotFound'
+        '409':
+          $ref: '#/components/responses/BookingNotPending'
+        '410':
+          $ref: '#/components/responses/BookingExpired'
+
+  /api/v1/bookings/{id}:
+    delete:
+      tags: [Bookings]
+      operationId: cancelBooking
+      summary: Отменить бронь
+      description: >-
+        Переводит действующую PENDING или CONFIRMED в CANCELLED
+        и устанавливает expiresAt в null. Запись сохраняется в базе.
+        После фиксации отмены интервал становится доступен для новой брони.
+        Повторная отмена CANCELLED возвращает 204 No Content.
+        При now >= expiresAt бронь PENDING переводится в EXPIRED;
+        изменение фиксируется до возврата 410 BOOKING_EXPIRED.
+        Для уже истёкшей брони также возвращается 410 BOOKING_EXPIRED.
+        Тело запроса отсутствует.
+      parameters:
+        - $ref: '#/components/parameters/BookingId'
+      responses:
+        '204':
+          description: Бронь отменена или уже была отменена. Тело ответа отсутствует.
+        '400':
+          $ref: '#/components/responses/InvalidBookingId'
+        '404':
+          $ref: '#/components/responses/BookingNotFound'
+        '410':
+          $ref: '#/components/responses/BookingExpired'
+
 components:
+  parameters:
+    BookingId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор брони. Некорректный UUID возвращает 400 VALIDATION_ERROR.
+      schema:
+        type: string
+        format: uuid
+      example: a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+  responses:
+    InvalidBookingId:
+      description: Некорректный UUID в пути (VALIDATION_ERROR)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: VALIDATION_ERROR
+            message: Некорректный UUID брони
+            timestamp: '2026-11-01T13:05:00Z'
+    BookingNotFound:
+      description: Бронь не найдена (BOOKING_NOT_FOUND)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: BOOKING_NOT_FOUND
+            message: Бронь не найдена
+            timestamp: '2026-11-01T13:05:00Z'
+    BookingNotPending:
+      description: Нельзя подтвердить отменённую бронь (BOOKING_NOT_PENDING)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: BOOKING_NOT_PENDING
+            message: Нельзя подтвердить отменённую бронь
+            timestamp: '2026-11-01T13:05:00Z'
+    BookingExpired:
+      description: Срок временной брони истёк (BOOKING_EXPIRED)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: BOOKING_EXPIRED
+            message: Срок временной брони истёк
+            timestamp: '2026-11-01T13:10:00Z'
   schemas:
     CreateBookingRequest:
       type: object
@@ -82,6 +202,7 @@ components:
           example: '2026-11-01T15:00:00Z'
     BookingResponse:
       type: object
+      description: Бронь переговорной комнаты. Временные метки возвращаются в UTC (ISO 8601).
       required: [id, roomId, userId, title, startTime, endTime, status, expiresAt, createdAt]
       properties:
         id:
@@ -108,6 +229,10 @@ components:
           type: string
           format: date-time
           nullable: true
+          description: >-
+            Срок временного удержания: для PENDING равен createdAt + 10 минут.
+            При now >= expiresAt бронь истекает. Для CONFIRMED и CANCELLED
+            значение null; для EXPIRED сохраняется исходный срок.
         createdAt:
           type: string
           format: date-time
@@ -123,3 +248,4 @@ components:
         timestamp:
           type: string
           format: date-time
+          description: Время ошибки в UTC в формате ISO 8601.

@@ -7,6 +7,7 @@ import org.corp.meet_reserve.api.BookingsApi;
 import org.corp.meet_reserve.service.BookingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,5 +18,16 @@ public class BookingController implements BookingsApi {
     @Override
     public ResponseEntity<BookingResponse> createPendingBooking(CreateBookingRequest request) {
         return ResponseEntity.status(201).body(bookingService.createPendingBooking(request));
+    }
+
+    @Override
+    public ResponseEntity<BookingResponse> confirmBooking(UUID id) {
+        return ResponseEntity.ok(bookingService.confirmBooking(id));
+    }
+
+    @Override
+    public ResponseEntity<Void> cancelBooking(UUID id) {
+        bookingService.cancelBooking(id);
+        return ResponseEntity.noContent().build();
     }
 }

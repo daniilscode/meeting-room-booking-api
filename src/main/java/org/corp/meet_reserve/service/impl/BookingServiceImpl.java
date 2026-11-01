@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.corp.meet_reserve.api.model.BookingResponse;
 import org.corp.meet_reserve.api.model.CreateBookingRequest;
 import org.corp.meet_reserve.entity.Booking;
-import org.corp.meet_reserve.entity.BookingStatus;
 import org.corp.meet_reserve.entity.Room;
+import org.corp.meet_reserve.exception.BookingExpiredException;
 import org.corp.meet_reserve.exception.RoomAlreadyBookedException;
 import org.corp.meet_reserve.exception.RoomInactiveException;
 import org.corp.meet_reserve.exception.RoomNotFoundException;
@@ -25,7 +25,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
@@ -56,6 +55,24 @@ public class BookingServiceImpl implements BookingService {
     private final RoomRepository roomRepository;
     private final StringRedisTemplate redisTemplate;
     private final Clock clock;
+    private final BookingLifecycleTransactionalService lifecycleService;
+
+    @Override
+    public BookingResponse confirmBooking(UUID bookingId) {
+        BookingActionResult result = lifecycleService.confirm(bookingId);
+        if (result.expired()) {
+            throw new BookingExpiredException();
+        }
+        return result.response();
+    }
+
+    @Override
+    public void cancelBooking(UUID bookingId) {
+        BookingActionResult result = lifecycleService.cancel(bookingId);
+        if (result.expired()) {
+            throw new BookingExpiredException();
+        }
+    }
 
     @Override
     @Transactional
