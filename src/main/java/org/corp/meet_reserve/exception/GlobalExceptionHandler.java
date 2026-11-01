@@ -1,13 +1,14 @@
 package org.corp.meet_reserve.exception;
 
-import org.corp.meet_reserve.api.model.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
+import org.corp.meet_reserve.api.model.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
@@ -43,6 +44,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException exception) {
         return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", exception.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
+        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Некорректный UUID брони");
+    }
+
+    @ExceptionHandler(BookingNotFoundException.class)
+    ResponseEntity<ErrorResponse> handleBookingNotFound(BookingNotFoundException exception) {
+        return error(HttpStatus.NOT_FOUND, "BOOKING_NOT_FOUND", exception.getMessage());
+    }
+
+    @ExceptionHandler(BookingNotPendingException.class)
+    ResponseEntity<ErrorResponse> handleBookingNotPending(BookingNotPendingException exception) {
+        return error(HttpStatus.CONFLICT, "BOOKING_NOT_PENDING", exception.getMessage());
+    }
+
+    @ExceptionHandler(BookingExpiredException.class)
+    ResponseEntity<ErrorResponse> handleBookingExpired(BookingExpiredException exception) {
+        return error(HttpStatus.GONE, "BOOKING_EXPIRED", exception.getMessage());
     }
 
     @ExceptionHandler(RoomNotFoundException.class)
