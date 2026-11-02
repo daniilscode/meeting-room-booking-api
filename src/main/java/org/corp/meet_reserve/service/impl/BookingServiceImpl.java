@@ -11,6 +11,8 @@ import org.corp.meet_reserve.exception.RoomInactiveException;
 import org.corp.meet_reserve.exception.RoomNotFoundException;
 import org.corp.meet_reserve.repository.BookingRepository;
 import org.corp.meet_reserve.repository.RoomRepository;
+import org.corp.meet_reserve.service.BookingActionResult;
+import org.corp.meet_reserve.service.BookingLifecycleService;
 import org.corp.meet_reserve.service.BookingService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -37,6 +39,9 @@ import static org.corp.meet_reserve.util.MessagesUtil.INVALID_DURATION;
 import static org.corp.meet_reserve.util.MessagesUtil.INVALID_END_TIME;
 import static org.corp.meet_reserve.util.MessagesUtil.INVALID_START_TIME;
 
+/**
+ * Реализует операции создания и изменения бронирований.
+ */
 @Service
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
@@ -55,7 +60,7 @@ public class BookingServiceImpl implements BookingService {
     private final RoomRepository roomRepository;
     private final StringRedisTemplate redisTemplate;
     private final Clock clock;
-    private final BookingLifecycleTransactionalService lifecycleService;
+    private final BookingLifecycleService lifecycleService;
 
     @Override
     public BookingResponse confirmBooking(UUID bookingId) {

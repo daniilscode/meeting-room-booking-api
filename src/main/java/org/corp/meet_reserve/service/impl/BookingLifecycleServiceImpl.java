@@ -6,6 +6,8 @@ import org.corp.meet_reserve.exception.BookingExpiredException;
 import org.corp.meet_reserve.exception.BookingNotFoundException;
 import org.corp.meet_reserve.exception.BookingNotPendingException;
 import org.corp.meet_reserve.repository.BookingRepository;
+import org.corp.meet_reserve.service.BookingActionResult;
+import org.corp.meet_reserve.service.BookingLifecycleService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,13 +20,17 @@ import static org.corp.meet_reserve.entity.BookingStatus.CONFIRMED;
 import static org.corp.meet_reserve.entity.BookingStatus.EXPIRED;
 import static org.corp.meet_reserve.entity.BookingStatus.PENDING;
 
+/**
+ * Реализует атомарные переходы состояний брони.
+ */
 @Service
 @RequiredArgsConstructor
-public class BookingLifecycleTransactionalService {
+public class BookingLifecycleServiceImpl implements BookingLifecycleService {
 
     private final BookingRepository bookingRepository;
     private final Clock clock;
 
+    @Override
     @Transactional
     public BookingActionResult confirm(UUID bookingId) {
         Booking booking = getForUpdate(bookingId);
@@ -51,6 +57,7 @@ public class BookingLifecycleTransactionalService {
         return new BookingActionResult(BookingResponseMapper.toResponse(booking), false);
     }
 
+    @Override
     @Transactional
     public BookingActionResult cancel(UUID bookingId) {
         Booking booking = getForUpdate(bookingId);
