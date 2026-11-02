@@ -12,6 +12,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -48,7 +49,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException exception) {
-        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", "Некорректный UUID брони");
+        String message = UUID.class.equals(exception.getRequiredType())
+                ? "Некорректный UUID брони"
+                : "Некорректный идентификатор ресурса";
+        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", message);
     }
 
     @ExceptionHandler(BookingNotFoundException.class)
@@ -79,6 +83,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RoomAlreadyBookedException.class)
     ResponseEntity<ErrorResponse> handleBookedRoom(RoomAlreadyBookedException exception) {
         return error(HttpStatus.CONFLICT, "SLOT_ALREADY_BOOKED", exception.getMessage());
+    }
+
+    @ExceptionHandler(RoomAlreadyExistsException.class)
+    ResponseEntity<ErrorResponse> handleRoomAlreadyExists(RoomAlreadyExistsException exception) {
+        return error(HttpStatus.CONFLICT, "ROOM_ALREADY_EXISTS", exception.getMessage());
     }
 
     private ResponseEntity<ErrorResponse> error(HttpStatus status, String code, String message) {

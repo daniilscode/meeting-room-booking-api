@@ -14,7 +14,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Optional;
 import jakarta.persistence.LockModeType;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface BookingRepository extends JpaRepository<Booking, UUID> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
