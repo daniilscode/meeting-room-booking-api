@@ -6,6 +6,7 @@ public interface MessagesUtil {
     String INVALID_DURATION = "Длительность брони должна быть от 15 минут до 4 часов";
     String ROOM_NOT_FOUND = "Комната не найдена: ";
     String SLOT_ALREADY_BOOKED = "Выбранный интервал уже занят";
+    String ROOM_ALREADY_EXISTS = "Комната с таким именем уже существует: ";
 
     String CLEAN_COMPLETE = "Очистка завершена: обновлено записей={}, startedAt={}";
     String CLEAN_ERROR = "Ошибка фоновой очистки, startedAt={}";

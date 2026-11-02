@@ -12,6 +12,8 @@ servers:
 tags:
   - name: Bookings
     description: Создание и управление бронированиями
+  - name: Rooms
+    description: Управление переговорными комнатами
 
 paths:
   /api/v1/bookings:
@@ -119,6 +121,101 @@ paths:
         '410':
           $ref: '#/components/responses/BookingExpired'
 
+  /api/v1/rooms:
+    post:
+      tags: [Rooms]
+      operationId: createRoom
+      summary: Создать переговорную комнату
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+      responses:
+        '201':
+          description: Комната создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '400':
+          description: Некорректные данные комнаты
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Комната с таким именем уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags: [Rooms]
+      operationId: getRooms
+      summary: Получить список комнат
+      parameters:
+        - name: activeOnly
+          in: query
+          required: false
+          description: Вернуть только активные комнаты
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Список комнат
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RoomResponse'
+
+  /api/v1/rooms/{id}:
+    get:
+      tags: [Rooms]
+      operationId: getRoom
+      summary: Получить комнату
+      parameters:
+        - $ref: '#/components/parameters/RoomId'
+      responses:
+        '200':
+          description: Комната найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '400':
+          $ref: '#/components/responses/InvalidRoomId'
+        '404':
+          $ref: '#/components/responses/RoomNotFound'
+
+  /api/v1/rooms/{id}/deactivate:
+    post:
+      tags: [Rooms]
+      operationId: deactivateRoom
+      summary: Деактивировать комнату
+      description: >-
+        Деактивирует комнату без удаления исторических бронирований.
+        Новые бронирования для неактивной комнаты запрещены.
+        Повторная деактивация возвращает текущее состояние комнаты.
+      parameters:
+        - $ref: '#/components/parameters/RoomId'
+      responses:
+        '200':
+          description: Комната деактивирована
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomResponse'
+        '400':
+          $ref: '#/components/responses/InvalidRoomId'
+        '404':
+          $ref: '#/components/responses/RoomNotFound'
+
 components:
   parameters:
     BookingId:
@@ -130,6 +227,18 @@ components:
         type: string
         format: uuid
       example: a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
+
+    RoomId:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор комнаты
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      example: 1
+
   responses:
     InvalidBookingId:
       description: Некорректный UUID в пути (VALIDATION_ERROR)
@@ -171,6 +280,29 @@ components:
             code: BOOKING_EXPIRED
             message: Срок временной брони истёк
             timestamp: '2026-11-01T13:10:00Z'
+
+    InvalidRoomId:
+      description: Некорректный идентификатор комнаты
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: VALIDATION_ERROR
+            message: Некорректный идентификатор комнаты
+            timestamp: '2026-11-03T10:00:00Z'
+
+    RoomNotFound:
+      description: Комната не найдена
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            code: ROOM_NOT_FOUND
+            message: Комната не найдена
+            timestamp: '2026-11-03T10:00:00Z'
+
   schemas:
     CreateBookingRequest:
       type: object
@@ -249,3 +381,56 @@ components:
           type: string
           format: date-time
           description: Время ошибки в UTC в формате ISO 8601.
+
+    CreateRoomRequest:
+      type: object
+      required:
+        - name
+        - capacity
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Большая переговорная
+        capacity:
+          type: integer
+          format: int32
+          minimum: 1
+          example: 12
+        hasProjector:
+          type: boolean
+          default: false
+          example: true
+
+    RoomResponse:
+      type: object
+      required:
+        - id
+        - name
+        - capacity
+        - hasProjector
+        - active
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: Большая переговорная
+        capacity:
+          type: integer
+          format: int32
+          example: 12
+        hasProjector:
+          type: boolean
+          example: true
+        active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-11-03T10:00:00Z'
