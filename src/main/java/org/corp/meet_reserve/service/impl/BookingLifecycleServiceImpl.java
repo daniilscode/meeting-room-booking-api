@@ -20,9 +20,6 @@ import static org.corp.meet_reserve.entity.BookingStatus.CONFIRMED;
 import static org.corp.meet_reserve.entity.BookingStatus.EXPIRED;
 import static org.corp.meet_reserve.entity.BookingStatus.PENDING;
 
-/**
- * Реализует атомарные переходы состояний брони.
- */
 @Service
 @RequiredArgsConstructor
 public class BookingLifecycleServiceImpl implements BookingLifecycleService {

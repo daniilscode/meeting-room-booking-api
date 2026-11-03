@@ -39,9 +39,6 @@ import static org.corp.meet_reserve.util.MessagesUtil.INVALID_DURATION;
 import static org.corp.meet_reserve.util.MessagesUtil.INVALID_END_TIME;
 import static org.corp.meet_reserve.util.MessagesUtil.INVALID_START_TIME;
 
-/**
- * Реализует операции создания и изменения бронирований.
- */
 @Service
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
