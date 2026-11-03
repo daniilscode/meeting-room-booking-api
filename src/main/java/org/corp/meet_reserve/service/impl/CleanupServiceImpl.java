@@ -11,9 +11,6 @@ import java.time.Instant;
 import static org.corp.meet_reserve.entity.BookingStatus.EXPIRED;
 import static org.corp.meet_reserve.entity.BookingStatus.PENDING;
 
-/**
- * Реализует очистку просроченных временных броней.
- */
 @Service
 @RequiredArgsConstructor
 public class CleanupServiceImpl implements CleanupService {
